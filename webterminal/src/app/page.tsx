@@ -1,6 +1,6 @@
 "use client";
 
-import RealTerminal from "@/components/RealTerminal";
+import RealTerminal from "../components/RealTerminal";
 
 export default function Home() {
   return (
