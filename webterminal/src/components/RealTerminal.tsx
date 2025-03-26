@@ -22,10 +22,10 @@ export default function RealTerminal() {
 
   return (
     <div className="w-full h-[400px] bg-black text-white p-4 rounded-lg">
-      <div className="h-[350px] overflow-y-auto">
-        {output.map((line, index) => (
+      <div className="h-[350px] overflow-x-hidden">
+      <pre>{output.map((line, index) => (
           <p key={index} className="text-green-400">{line}</p>
-        ))}
+        ))}</pre>
       </div>
       <div className="flex items-center">
         <span className="text-white">C:\Users\NextJS&gt;</span>
