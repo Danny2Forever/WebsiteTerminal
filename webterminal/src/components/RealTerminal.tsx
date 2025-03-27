@@ -31,7 +31,7 @@ export default function RealTerminal() {
         top: outputContainerRef.current.scrollHeight,
         behavior: "smooth",
       });
-    }, 100); // Small delay to ensure DOM updates
+    }, 100);
   }, [output]);
 
   return (
