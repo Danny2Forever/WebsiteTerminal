@@ -36,7 +36,7 @@ export default function RealTerminal() {
     const data = await response.json();
     if (data?.output) {
       if (input.startsWith("cd ")) {
-        if (data.output.startsWith("Error:")) {
+        if (data.output.startsWith("ENOENT:")) {
           setOutput((prev) => prev.slice(0, -1).concat(`${data.output}`));
         } else {
           setCurrentPath(data.output.replace("Changed directory to ", ""));
