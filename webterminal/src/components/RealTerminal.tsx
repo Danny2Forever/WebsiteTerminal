@@ -6,13 +6,27 @@ export default function RealTerminal() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentPath, setCurrentPath] = useState<string>(""); // Initial path
   const outputContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchCurrentPath = async () => {
+      const response = await fetch("/api/terminal");
+      const data = await response.json();
+      if (data?.currentDir) {
+        setCurrentPath(data.currentDir); // Set the current path to the state
+      }
+    };
+
+    fetchCurrentPath();
+  }, []);
 
   const runCommand = async () => {
     if (!input.trim() || loading) return;
     setInput("");
     setLoading(true);
-    setOutput((prev) => [...prev, `C:\\Users\\NextJS> ${input}`, "Running..."]);
+    setOutput((prev) => [...prev, `${currentPath}> ${input}`, "Running..."]);
+    
     const response = await fetch("/api/terminal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -20,9 +34,20 @@ export default function RealTerminal() {
     });
 
     const data = await response.json();
-    setOutput((prev) => prev.slice(0, -1).concat(data.output));
+    if (data?.output) {
+      if (input.startsWith("cd ")) {
+        if (data.output.startsWith("Error:")) {
+          setOutput((prev) => prev.slice(0, -1).concat(`${data.output}`));
+        } else {
+          setCurrentPath(data.output.replace("Changed directory to ", ""));
+          setOutput((prev) => prev.slice(0, -1).concat(data.output));
+        }
+      } else {
+        setOutput((prev) => prev.slice(0, -1).concat(data.output));
+      }
+    }
+
     setLoading(false);
-    
   };
 
   useEffect(() => {
@@ -47,7 +72,7 @@ export default function RealTerminal() {
         </pre>
       </div>
       <div className="flex items-center">
-        <span className="text-white">C:\Users\NextJS&gt;</span>
+        <span className="text-white">{currentPath}&gt;</span>
         <input
           type="text"
           className="bg-black text-white outline-none ml-2 w-full"
