@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { spawn } from "child_process";
+import path from "path";
+import os from "os";
 
-const allowedIPs = ["::1"];
-export async function POST(req: Request) {
-  const { command } = await req.json();
-  const ip = req.headers.get("x-forwarded-for") || "Unknown IP";
+const allowedIPs: string[] = ["::1"];
+let workingDirectory: string = os.homedir();
 
-  // console.log(command)
-  console.log(ip)
-  // console.log(req)
+export async function POST(req: Request): Promise<Response> {
+  const { command }: { command: string } = await req.json();
+  const ip: string = req.headers.get("x-forwarded-for") || "Unknown IP";
 
   if (!ip || !allowedIPs.includes(ip)) {
     return NextResponse.json(
@@ -21,40 +21,42 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No command provided" }, { status: 400 });
   }
 
+  // Handle 'cd' command separately
+  if (command.startsWith("cd ")) {
+    const newPath: string = command.slice(3).trim();
+    const absolutePath: string = path.resolve(workingDirectory, newPath);
+    
+    try {
+      process.chdir(absolutePath);
+      workingDirectory = absolutePath;
+      return NextResponse.json({ output: `Changed directory to ${absolutePath}` });
+    } catch (error: any) {
+      return NextResponse.json({ output: `Error: ${error.message}` });
+    }
+  }
+
   return new Promise((resolve) => {
-    // Spawn PowerShell process
-    // const process = spawn("powershell.exe", [
-    //   "-Command",
-    //   `
-    //   $admin = [System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()
-    //   if (-not $admin.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    //       Write-Output "Permission Denied: Admin rights required"
-    //       exit
-    //   }
-    //   Stop-Computer -Force
-    //   `,
-    // ]); // Admin permission if don't mind the permission (not recommend) use spawn("powershell.exe", ["-Command", command])
+    const process = spawn("powershell.exe", ["-Command", command], {
+      cwd: workingDirectory,
+    });
 
-    const process = spawn("powershell.exe", ["-Command", command]);
+    let output: string = "";
+    let errorOutput: string = "";
 
-    let output = "";
-    let errorOutput = "";
-
-    process.stdout.on("data", (data) => {
+    process.stdout.on("data", (data: Buffer) => {
       output += data.toString();
     });
 
-    process.stderr.on("data", (data) => {
-      output += data.toString();
+    process.stderr.on("data", (data: Buffer) => {
+      errorOutput += data.toString();
     });
 
     process.on("close", () => {
       resolve(
         NextResponse.json({
-          output: (output + errorOutput + "\n").trim(),
+          output: (output + errorOutput).trim(),
         })
       );
     });
-    
   });
 }
