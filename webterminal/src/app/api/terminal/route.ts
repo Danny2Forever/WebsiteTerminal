@@ -4,7 +4,11 @@ import path from "path";
 import os from "os";
 
 const allowedIPs: string[] = ["::1"];
-let workingDirectory: string = os.homedir();
+let workingDirectory: string = os.homedir(); // Start at home directory
+
+export async function GET(): Promise<Response> {
+  return NextResponse.json({ currentDir: workingDirectory });
+}
 
 export async function POST(req: Request): Promise<Response> {
   const { command }: { command: string } = await req.json();
@@ -21,17 +25,18 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: "No command provided" }, { status: 400 });
   }
 
-  // Handle 'cd' command separately
   if (command.startsWith("cd ")) {
     const newPath: string = command.slice(3).trim();
     const absolutePath: string = path.resolve(workingDirectory, newPath);
-    
+
     try {
       process.chdir(absolutePath);
       workingDirectory = absolutePath;
-      return NextResponse.json({ output: `Changed directory to ${absolutePath}` });
+      return NextResponse.json({
+        output: `Changed directory to ${absolutePath}`,
+      });
     } catch (error: any) {
-      return NextResponse.json({ output: `Error: ${error.message}` });
+      return NextResponse.json({ output: `${error.message}` });
     }
   }
 
@@ -55,6 +60,7 @@ export async function POST(req: Request): Promise<Response> {
       resolve(
         NextResponse.json({
           output: (output + errorOutput).trim(),
+          currentDir: workingDirectory,
         })
       );
     });
