@@ -8,7 +8,7 @@ This is a Next.js app that allows users to run terminal commands via a web inter
 - Real-time terminal updates using React's useState and useEffect.
 
 # Limitations
-Does not support SSH or other remote access protocols. This app only works on the server where it's hosted, running commands within the project directory.
+Does not support SSH or other remote access protocols.
 
 #  Installation
 Clone the repository:
