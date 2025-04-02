@@ -6,27 +6,32 @@ export default function RealTerminal() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [currentPath, setCurrentPath] = useState<string>(""); // Initial path
+  const [currentPath, setCurrentPath] = useState<string>("");
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const outputContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null); // Ref for input field
 
   useEffect(() => {
     const fetchCurrentPath = async () => {
       const response = await fetch("/api/terminal");
       const data = await response.json();
       if (data?.currentDir) {
-        setCurrentPath(data.currentDir); // Set the current path to the state
+        setCurrentPath(data.currentDir);
       }
     };
-
     fetchCurrentPath();
   }, []);
 
   const runCommand = async () => {
     if (!input.trim() || loading) return;
+
+    setHistory((prev) => [...prev, input]); // Store command in history
+    setHistoryIndex(null); // Reset history index
     setInput("");
     setLoading(true);
     setOutput((prev) => [...prev, `${currentPath}> ${input}`, "Running..."]);
-    
+
     const response = await fetch("/api/terminal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -46,8 +51,37 @@ export default function RealTerminal() {
         setOutput((prev) => prev.slice(0, -1).concat(data.output));
       }
     }
-
     setLoading(false);
+
+    // Focus back on the input field after command execution
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      runCommand();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (history.length > 0) {
+        setHistoryIndex((prev) => {
+          const newIndex = prev === null ? history.length - 1 : Math.max(prev - 1, 0);
+          setInput(history[newIndex]);
+          return newIndex;
+        });
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (history.length > 0 && historyIndex !== null) {
+        setHistoryIndex((prev) => {
+          if (prev === null) return null;
+          const newIndex = Math.min(prev + 1, history.length - 1);
+          setInput(history[newIndex] || "");
+          return newIndex < history.length ? newIndex : null;
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -74,12 +108,14 @@ export default function RealTerminal() {
       <div className="flex items-center">
         <span className="text-white">{currentPath}&gt;</span>
         <input
+          ref={inputRef} // Attach ref to input field
           type="text"
           className="bg-black text-white outline-none ml-2 w-full"
           value={input}
           disabled={loading}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && runCommand()}
+          onKeyDown={handleKeyDown}
+          autoFocus // Automatically focus input on render
         />
       </div>
     </div>
