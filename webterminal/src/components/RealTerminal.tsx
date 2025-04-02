@@ -53,7 +53,6 @@ export default function RealTerminal() {
     }
     setLoading(false);
 
-    // Focus back on the input field after command execution
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
@@ -66,7 +65,8 @@ export default function RealTerminal() {
       e.preventDefault();
       if (history.length > 0) {
         setHistoryIndex((prev) => {
-          const newIndex = prev === null ? history.length - 1 : Math.max(prev - 1, 0);
+          const newIndex =
+            prev === null ? history.length - 1 : Math.max(prev - 1, 0);
           setInput(history[newIndex]);
           return newIndex;
         });
@@ -101,7 +101,9 @@ export default function RealTerminal() {
       >
         <pre>
           {output.map((line, index) => (
-            <p key={index} className="text-green-400">{line}</p>
+            <p key={index} className="text-green-400">
+              {line}
+            </p>
           ))}
         </pre>
       </div>
